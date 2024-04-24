@@ -58,7 +58,6 @@ func setKey(w http.ResponseWriter, r *http.Request) {
 
 func redirect(w http.ResponseWriter, r *http.Request) {
 	words := r.URL.Path[1:]
-	println(words)
 	val, err := getFromRedis(words)
 
 	if err != nil {

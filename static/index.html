@@ -1,8 +1,43 @@
 <html>
-    <body>
-        <form method="post" action="/set">
-            <input type="text" name="value" />
-            <button type="submit">submit</button>
+    <head>
+        <title>Urlitin</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1" />
+    </head>
+    <body
+        style="
+            background-color: #fafafa;
+            font-size: 20px;
+            padding: 2rem;
+            line-height: 1.6;
+            max-width: 300px;
+        "
+    >
+        <h1>Urlitin</h1>
+        <form method="post" action="/set" style="display: grid; grid-gap: 1rem">
+            <label> URL to link to: </label>
+            <input
+                placeholder="url..."
+                style="
+                    height: 2.5rem;
+                    border-radius: 12px;
+                    padding: 0.5rem;
+                    font-sie: 1rem;
+                    border: 1px solid #3498db;
+                "
+                type="text"
+                name="value"
+            />
+            <button
+                style="
+                    height: 2.5rem;
+                    background-color: #3498db;
+                    border: none;
+                    border-radius: 12px;
+                "
+                type="submit"
+            >
+                Submit
+            </button>
         </form>
     </body>
 </html>
