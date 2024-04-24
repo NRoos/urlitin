@@ -30,8 +30,8 @@ func getUrl() string {
 	}
 	defer file.Close()
 	words := ""
+	scanner := bufio.NewScanner(file)
 	for i := 0; i < 3; i++ {
-		scanner := bufio.NewScanner(file)
 		random := int64(rand.Intn(2252))
 		file.Seek(5*random, 0)
 		scanner.Scan()
