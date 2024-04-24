@@ -1,67 +1,91 @@
 package main
 
 import (
+	"bufio"
 	"context"
+	"fmt"
+	"html/template"
 	"io"
+	"log"
+	"math/rand"
 	"net/http"
+	"os"
 
 	"github.com/redis/go-redis/v9"
 )
 
 var ctx = context.Background()
 
-func writeToRedis(key string, value string) {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-		Protocol: 3,  // specify 2 for RESP 2 or 3 for RESP 3
-	})
+var rdb = redis.NewClient(&redis.Options{
+	Addr:     "localhost:6379",
+	Password: "", // no password set
+	DB:       0,  // use default DB
+	Protocol: 3,  // specify 2 for RESP 2 or 3 for RESP 3
+})
 
-	err := rdb.Set(ctx, key, value, 0).Err()
+func getUrl() string {
+	file, err := os.Open("words.txt")
 	if err != nil {
-		panic(err)
+		log.Fatal(err)
 	}
+	defer file.Close()
+	words := ""
+	for i := 0; i < 3; i++ {
+		scanner := bufio.NewScanner(file)
+		random := int64(rand.Intn(2252))
+		file.Seek(5*random, 0)
+		scanner.Scan()
+		words += scanner.Text() + "-"
+	}
+	return words[:len(words)-1]
+}
+
+func writeToRedis(key string, value string) {
+	rdb.Set(ctx, key, value, 0)
 }
 
 func getFromRedis(key string) (string, error) {
-	rdb := redis.NewClient(&redis.Options{
-		Addr:     "localhost:6379",
-		Password: "", // no password set
-		DB:       0,  // use default DB
-		Protocol: 3,  // specify 2 for RESP 2 or 3 for RESP 3
-	})
-
 	return rdb.Get(ctx, key).Result()
 }
 
 func setKey(w http.ResponseWriter, r *http.Request) {
-	// read from formdata
-	key := r.FormValue("key")
 	value := r.FormValue("value")
-	writeToRedis(key, value)
-	newValue, err := getFromRedis(key)
-	if err != nil {
-		io.WriteString(w, "Key set failed\n"+key+" : "+value+"\n"+err.Error())
-	}
-	io.WriteString(w, "Key set successfully\n"+key+" : "+newValue)
+	url := getUrl()
+	println(url, value)
+	writeToRedis(url, value)
+	fmt.Fprintf(w, "<html><body><h1>"+url+"<h1></body></html>")
 }
 
 func redirect(w http.ResponseWriter, r *http.Request) {
-	val, err := getFromRedis(r.URL.Path[5:])
+	words := r.URL.Path[1:]
+	println(words)
+	val, err := getFromRedis(words)
 
 	if err != nil {
-		io.WriteString(w, "Key not found\n"+r.URL.Path[5:]+"\n"+err.Error())
+		io.WriteString(w, "Key not found\n"+words+"\n")
 	} else {
 		// redirect to the value of the key
+		if val[:4] != "http" {
+			val = "http://" + val
+		}
 		http.Redirect(w, r, val, http.StatusMovedPermanently)
+	}
+}
+
+func handleGet(w http.ResponseWriter, r *http.Request) {
+	if len(r.URL.Path) > 1 {
+		redirect(w, r)
+	} else {
+		http.FileServer(http.Dir("./static/index.html"))
+		t, _ := template.ParseFiles("./static/index.html")
+		t.Execute(w, t)
 	}
 }
 
 func main() {
 	http.HandleFunc("/set", setKey)
-	http.HandleFunc("/api/", redirect)
+	http.HandleFunc("/", handleGet)
+
 	print("Server is running on port 8080")
-	http.Handle("/", http.FileServer(http.Dir("./static")))
 	http.ListenAndServe(":8080", nil)
 }
