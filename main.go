@@ -30,10 +30,10 @@ func getUrl() string {
 	}
 	defer file.Close()
 	words := ""
-	scanner := bufio.NewScanner(file)
 	for i := 0; i < 3; i++ {
-		random := int64(rand.Intn(2252))
-		file.Seek(5*random, 0)
+		random := rand.Int63n(2252) * 5
+		file.Seek(random, 0)
+		scanner := bufio.NewScanner(file)
 		scanner.Scan()
 		words += scanner.Text() + "-"
 	}
@@ -53,7 +53,7 @@ func setKey(w http.ResponseWriter, r *http.Request) {
 	url := getUrl()
 	println(url, value)
 	writeToRedis(url, value)
-	fmt.Fprintf(w, "<html><body><h1>"+url+"<h1></body></html>")
+	fmt.Fprintf(w, "<html><body><h1>%s/%s<h1></body></html>", r.Host, url)
 }
 
 func redirect(w http.ResponseWriter, r *http.Request) {
